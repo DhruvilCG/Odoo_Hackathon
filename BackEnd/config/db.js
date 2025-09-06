@@ -1,18 +1,17 @@
-import mysql from 'mysql2';
+import mysql from "mysql2";
+import dotenv from "dotenv";
+dotenv.config();
 
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'dhruvil2207',
-    database: 'ecofinds'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 db.connect((err) => {
-    if (err) {
-        console.error('Database connection failed:', err);
-    } else {
-        console.log('Connected to MySQL database');
-    }
+  if (err) console.error("DB connection error:", err);
+  else console.log("Connected to MySQL database");
 });
 
 export default db;
