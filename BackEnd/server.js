@@ -2,12 +2,12 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
+import "./config/db.js";
 
 import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import cartRoutes from "./routes/cart.js";
 import purchaseRoutes from "./routes/purchases.js";
-import "./models/createTables.js";
 
 const app = express();
 app.use(cors());
