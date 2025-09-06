@@ -34,7 +34,6 @@ export default function Home() {
   const handleSearch = async () => {
     if (!q) return;
 
-    // If user enters a valid MongoDB ID (24 characters)
     if (q.length === 24) {
       try {
         const token = localStorage.getItem('token');
@@ -46,13 +45,12 @@ export default function Home() {
         });
         if (!res.ok) throw new Error('Product not found');
         const data = await res.json();
-        setProducts([data]); // Show only this product
+        setProducts([data]);
       } catch (err) {
         console.error(err.message);
-        setProducts([]); // Clear products if not found
+        setProducts([]);
       }
     } else {
-      // Otherwise filter locally by title
       const filtered = products.filter((p) =>
         p.title.toLowerCase().includes(q.toLowerCase())
       );
@@ -60,11 +58,29 @@ export default function Home() {
     }
   };
 
-  // Filter by category
-  const displayedProducts = products.filter((p) => {
-    if (cat !== 'All' && p.category !== cat) return false;
-    return true;
-  });
+  // Add product to cart
+  const addToCart = async (product) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('https://odoo-hackathon-psi.vercel.app/api/cart', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId: product._id, quantity: 1 }),
+      });
+      if (!res.ok) throw new Error('Failed to add to cart');
+      const data = await res.json();
+      alert('Product added to cart!');
+      console.log(data);
+    } catch (err) {
+      console.error('Add to cart error:', err.message);
+      alert('Failed to add product to cart');
+    }
+  };
+
+  const displayedProducts = products.filter((p) => (cat !== 'All' && p.category !== cat ? false : true));
 
   return (
     <div className="bg-gray-100 min-h-screen text-gray-800">
@@ -110,21 +126,25 @@ export default function Home() {
             <div className="p-4 sm:p-6 bg-white rounded shadow">No products found</div>
           )}
           {displayedProducts.map((p) => (
-            <Link
+            <div
               key={p._id}
-              to={`/product/${p._id}`}
               className="block bg-white p-2 sm:p-4 rounded-lg shadow hover:shadow-xl transition-shadow"
             >
-              <div className="w-full h-32 sm:h-48 bg-gray-200 flex items-center justify-center mb-2 sm:mb-4">
-                Image
-              </div>
-              <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{p.title}</h3>
-              <p className="text-sm text-gray-600 mb-1 sm:mb-2">{p.description}</p>
-              <p className="text-purple-600 font-bold mb-1 sm:mb-2">₹{p.price}</p>
-              <button className="w-full bg-purple-600 text-white py-1 sm:py-2 rounded hover:bg-purple-700 text-sm sm:text-base">
+              <Link to={`/product/${p._id}`}>
+                <div className="w-full h-32 sm:h-48 bg-gray-200 flex items-center justify-center mb-2 sm:mb-4">
+                  Image
+                </div>
+                <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{p.title}</h3>
+                <p className="text-sm text-gray-600 mb-1 sm:mb-2">{p.description}</p>
+                <p className="text-purple-600 font-bold mb-1 sm:mb-2">₹{p.price}</p>
+              </Link>
+              <button
+                onClick={() => addToCart(p)}
+                className="w-full bg-purple-600 text-white py-1 sm:py-2 rounded hover:bg-purple-700 text-sm sm:text-base mt-2"
+              >
                 Add to Cart
               </button>
-            </Link>
+            </div>
           ))}
         </div>
       </div>
