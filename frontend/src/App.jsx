@@ -10,32 +10,13 @@ import Dashboard from './pages/Dashboard'
 import CartPage from './pages/CartPage'
 import Purchases from './pages/Purchases'
 import { useAuth } from './context/AuthContext'
+import Navbar from './components/Navbar'
 
 export default function App(){
   const { user, logout } = useAuth()
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto p-4 flex items-center justify-between">
-          <Link to="/" className="font-bold text-xl">Entrestt Market</Link>
-          <nav className="space-x-4 flex items-center">
-            <Link to="/">Feed</Link>
-            {user ? (
-              <>
-                <Link to="/my-listings">My Listings</Link>
-                <Link to="/dashboard">Dashboard</Link>
-                <Link to="/cart">Cart</Link>
-                <button onClick={logout} className="ml-2 px-3 py-1 bg-red-500 text-white rounded">Logout</button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Login</Link>
-                <Link to="/signup" className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Sign up</Link>
-              </>
-            )}
-          </nav>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="max-w-4xl mx-auto p-4">
         <Routes>

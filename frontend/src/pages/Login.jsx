@@ -1,21 +1,42 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
-  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
   const nav = useNavigate();
 
   const submit = async (e) => {
     e.preventDefault();
+    setErr('');
+
     try {
-      await login(email, password);
+      setLoading(true);
+      const res = await fetch('https://odoo-hackathon-psi.vercel.app/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Save token if your API provides it
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      // ✅ Redirect to dashboard/home after successful login
       nav('/');
     } catch (er) {
       setErr(er.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -31,9 +52,11 @@ export default function Login() {
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
               <input
                 id="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
+                required
                 className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-black"
               />
             </div>
@@ -41,19 +64,24 @@ export default function Login() {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
                 id="password"
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
-                type="password"
+                required
                 className="w-full p-3 sm:p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-black"
               />
             </div>
-            <button type="submit" className="w-full p-3 sm:p-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition text-sm sm:text-base">
-              Login
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full p-3 sm:p-4 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition text-sm sm:text-base disabled:opacity-50"
+            >
+              {loading ? 'Logging in...' : 'Login'}
             </button>
           </form>
           <p className="mt-4 text-center text-gray-600 text-sm sm:text-base">
-            Don't have an account? <Link to="/signup" className="text-purple-600 font-medium hover:underline">Sign up</Link>
+            Don&apos;t have an account? <Link to="/signup" className="text-purple-600 font-medium hover:underline">Sign up</Link>
           </p>
         </div>
       </section>
