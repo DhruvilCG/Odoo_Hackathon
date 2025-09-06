@@ -1,48 +1,35 @@
-import db from "../config/db.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-export const register = (req, res) => {
-  const { display_name, email, password, confirm_password } = req.body;
-  if (!display_name || !email || !password || !confirm_password) {
-    return res.status(400).json({ message: "All fields are required" });
+export const signup = async (req, res) => {
+  try {
+    const { displayName, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) return res.status(400).json({ message: "Email already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({ displayName, email, password: hashedPassword });
+    res.status(201).json({ message: "User created successfully", userId: newUser._id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  if (password !== confirm_password) {
-    return res.status(400).json({ message: "Passwords do not match" });
-  }
-
-  const hashedPassword = bcrypt.hashSync(password, 10);
-
-  db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
-    if (results.length > 0) return res.status(400).json({ message: "Email already exists" });
-
-    db.query(
-      "INSERT INTO users (display_name, email, password) VALUES (?, ?, ?)",
-      [display_name, email, hashedPassword],
-      (err, results) => {
-        if (err) return res.status(500).json({ error: err });
-        res.json({ message: "User registered successfully" });
-      }
-    );
-  });
 };
 
-export const login = (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "Email and password required" });
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-  db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
-    if (err) return res.status(500).json({ error: err });
-    if (results.length === 0) return res.status(400).json({ message: "User not found" });
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) return res.status(400).json({ message: "Invalid email or password" });
 
-    const user = results[0];
-    if (!bcrypt.compareSync(password, user.password))
-      return res.status(401).json({ message: "Invalid password" });
-
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "1d" });
-    res.json({ token, user: { id: user.id, display_name: user.display_name, email: user.email } });
-  });
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    res.json({ token, userId: user._id, displayName: user.displayName });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

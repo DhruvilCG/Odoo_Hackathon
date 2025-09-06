@@ -1,39 +1,37 @@
-import db from "../config/db.js";
+import Cart from "../models/Cart.js";
+import Product from "../models/Product.js";
 
-export const addToCart = (req, res) => {
-  const user_id = req.user.id;
-  const { product_id, quantity } = req.body;
-
-  db.query(
-    "INSERT INTO cart (user_id, product_id, quantity) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE quantity=quantity+?",
-    [user_id, product_id, quantity, quantity],
-    (err) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json({ message: "Added to cart" });
+export const addToCart = async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+    let cartItem = await Cart.findOne({ user: req.user.id, product: productId });
+    if (cartItem) {
+      cartItem.quantity += quantity;
+      await cartItem.save();
+    } else {
+      cartItem = await Cart.create({ user: req.user.id, product: productId, quantity });
     }
-  );
+    res.json({ message: "Added to cart", cartItem });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const viewCart = (req, res) => {
-  const user_id = req.user.id;
-  db.query(
-    `SELECT c.id as cart_id, p.* , c.quantity 
-     FROM cart c JOIN products p ON c.product_id = p.id
-     WHERE c.user_id = ?`,
-    [user_id],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err });
-      const totalPrice = results.reduce((sum, item) => sum + item.price * item.quantity, 0);
-      res.json({ cart: results, totalPrice });
-    }
-  );
+export const viewCart = async (req, res) => {
+  try {
+    const cartItems = await Cart.find({ user: req.user.id }).populate("product");
+    const totalPrice = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    res.json({ cart: cartItems, totalPrice });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const removeFromCart = (req, res) => {
-  const user_id = req.user.id;
-  const cart_id = req.params.id;
-  db.query("DELETE FROM cart WHERE id = ? AND user_id = ?", [cart_id, user_id], (err, result) => {
-    if (err) return res.status(500).json({ error: err });
+export const removeFromCart = async (req, res) => {
+  try {
+    await Cart.findOneAndDelete({ _id: req.params.id, user: req.user.id });
     res.json({ message: "Removed from cart" });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

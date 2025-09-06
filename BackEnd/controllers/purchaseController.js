@@ -1,41 +1,34 @@
-import db from "../config/db.js";
+import Cart from "../models/Cart.js";
+import Purchase from "../models/Purchase.js";
+import Product from "../models/Product.js";
 
-export const checkout = (req, res) => {
-  const user_id = req.user.id;
+export const checkout = async (req, res) => {
+  try {
+    const cartItems = await Cart.find({ user: req.user.id });
+    if (cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
 
-  // Get all cart items
-  db.query(
-    `SELECT * FROM cart WHERE user_id = ?`,
-    [user_id],
-    (err, cartItems) => {
-      if (err) return res.status(500).json({ error: err });
-      if (cartItems.length === 0) return res.status(400).json({ message: "Cart is empty" });
-
-      cartItems.forEach(item => {
-        db.query(
-          "INSERT INTO purchases (user_id, product_id, quantity, price_paid) VALUES (?, ?, ?, ?)",
-          [user_id, item.product_id, item.quantity, item.quantity * item.price_paid || 0]
-        );
+    for (const item of cartItems) {
+      const product = await Product.findById(item.product);
+      await Purchase.create({
+        user: req.user.id,
+        product: product._id,
+        quantity: item.quantity,
+        pricePaid: product.price * item.quantity,
       });
-
-      // Clear cart
-      db.query("DELETE FROM cart WHERE user_id = ?", [user_id]);
-
-      res.json({ message: "Checkout successful" });
     }
-  );
+
+    await Cart.deleteMany({ user: req.user.id });
+    res.json({ message: "Checkout successful" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-export const previousPurchases = (req, res) => {
-  const user_id = req.user.id;
-  db.query(
-    `SELECT p.*, pr.* FROM purchases pr 
-     JOIN products p ON pr.product_id = p.id
-     WHERE pr.user_id = ?`,
-    [user_id],
-    (err, results) => {
-      if (err) return res.status(500).json({ error: err });
-      res.json(results);
-    }
-  );
+export const previousPurchases = async (req, res) => {
+  try {
+    const purchases = await Purchase.find({ user: req.user.id }).populate("product");
+    res.json(purchases);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
