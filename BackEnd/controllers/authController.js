@@ -22,6 +22,7 @@ export const signup = async (req, res) => {
 };
 
 // Login
+// Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -39,19 +40,12 @@ export const login = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    // Store token in HTTP-only cookie
-    res.cookie("token", token, {
-      httpOnly: true,                  // cannot be accessed by JS
-      secure: process.env.NODE_ENV === "production", // HTTPS only in production
-      sameSite: "strict",
-      maxAge: 60 * 60 * 1000,          // 1 hour
-    });
-
-    // Send user data (without token)
+    // Return token in response
     res.json({
+      token,                 // <-- return token
       userId: user._id,
       displayName: user.displayName,
-      email: user.email,
+      email: user.email
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
