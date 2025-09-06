@@ -1,23 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import * as api from '../lib/mockApi';
-import { useAuth } from '../context/AuthContext';
+// src/pages/Home.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { apiFetch } from "../utils/api"; // fetch with JWT from cookie
 
-const CATEGORIES = ['All', 'Electronics', 'Books', 'Clothing', 'Misc'];
+const CATEGORIES = ["All", "Electronics", "Books", "Clothing", "Misc"];
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [q, setQ] = useState('');
-  const [cat, setCat] = useState('All');
-  const { user } = useAuth(); // get current user
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("All");
+  const { user } = useAuth();
 
   useEffect(() => {
-    api.listProducts().then(setProducts);
+    apiFetch("https://odoo-hackathon-psi.vercel.app/api/products")
+      .then(setProducts)
+      .catch(console.error);
   }, []);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      if (cat !== 'All' && p.category !== cat) return false;
+      if (cat !== "All" && p.category !== cat) return false;
       if (q && !p.title.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
     });
@@ -47,7 +50,9 @@ export default function Home() {
             <button
               key={c}
               onClick={() => setCat(c)}
-              className={`px-2 py-1 sm:px-4 sm:py-2 rounded ${cat === c ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+              className={`px-2 py-1 sm:px-4 sm:py-2 rounded ${
+                cat === c ? "bg-purple-600 text-white" : "bg-gray-200 text-gray-700"
+              }`}
             >
               {c}
             </button>
@@ -56,17 +61,21 @@ export default function Home() {
 
         {/* Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          {filtered.length === 0 && <div className="p-4 sm:p-6 bg-white rounded shadow">No products yet</div>}
+          {filtered.length === 0 && (
+            <div className="p-4 sm:p-6 bg-white rounded shadow">No products yet</div>
+          )}
           {filtered.map((p) => (
             <Link
-              key={p.id}
-              to={`/product/${p.id}`}
+              key={p._id}
+              to={`/product/${p._id}`}
               className="block bg-white p-2 sm:p-4 rounded-lg shadow hover:shadow-xl transition-shadow"
             >
-              <div className="w-full h-32 sm:h-48 bg-gray-200 flex items-center justify-center mb-2 sm:mb-4">Image</div>
+              <div className="w-full h-32 sm:h-48 bg-gray-200 flex items-center justify-center mb-2 sm:mb-4">
+                <img src={p.image} alt={p.title} className="object-cover w-full h-full rounded" />
+              </div>
               <h3 className="font-semibold text-base sm:text-lg mb-1 sm:mb-2">{p.title}</h3>
               <p className="text-sm text-gray-600 mb-1 sm:mb-2">{p.description}</p>
-              <p className="text-purple-600 font-bold mb-1 sm:mb-2">${p.price}</p>
+              <p className="text-purple-600 font-bold mb-1 sm:mb-2">₹{p.price}</p>
               <button className="w-full bg-purple-600 text-white py-1 sm:py-2 rounded hover:bg-purple-700 text-sm sm:text-base">
                 Add to Cart
               </button>
@@ -75,7 +84,9 @@ export default function Home() {
         </div>
 
         <div className="text-center mt-4 sm:mt-6">
-          <button className="px-4 sm:px-6 py-1 sm:py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base">Load More Products</button>
+          <button className="px-4 sm:px-6 py-1 sm:py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base">
+            Load More Products
+          </button>
         </div>
       </div>
 

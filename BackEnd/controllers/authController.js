@@ -1,35 +1,68 @@
+// controllers/authController.js
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import dotenv from "dotenv";
 dotenv.config();
 
+// Signup
 export const signup = async (req, res) => {
   try {
     const { displayName, email, password } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Email already exists" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({ displayName, email, password: hashedPassword });
+
     res.status(201).json({ message: "User created successfully", userId: newUser._id });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+// Login
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(400).json({ message: "Invalid email or password" });
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    res.json({ token, userId: user._id, displayName: user.displayName });
+    // Sign JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // Store token in HTTP-only cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 60 * 60 * 1000, // 1 hour
+    });
+
+    res.json({
+      message: "Login successful",
+      userId: user._id,
+      displayName: user.displayName,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+};
+
+// Logout
+export const logout = async (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    sameSite: "strict",
+  });
+  res.json({ message: "Logged out successfully" });
 };
