@@ -1,30 +1,22 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React from 'react'
+import { useAuth } from '../context/AuthContext'
 
-function Dashboard() {
-  const { user, logout } = useAuth();
-  const [username, setUsername] = useState(user?.username || '');
-
-  const handleSave = () => {
-    alert(`Profile updated: ${username}`);
-  };
-
-  if (!user) return <h2>Please log in</h2>;
+export default function Dashboard(){
+  const { user } = useAuth()
+  if(!user) return <div className="text-center mt-16 text-red-500 font-semibold">Please login</div>
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h2>User Dashboard</h2>
-      <p>Email: {user.email}</p>
-      <input
-        type="text"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <button onClick={handleSave}>Save</button>
-      <br />
-      <button onClick={logout}>Logout</button>
+    <div className="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg mt-16">
+      <h2 className="text-2xl font-bold mb-6 text-blue-600">User Dashboard</h2>
+      <div className="mb-4">
+        <div className="text-gray-600 font-semibold">Username:</div>
+        <div className="text-lg font-bold">{user.username}</div>
+      </div>
+      <div className="mb-4">
+        <div className="text-gray-600 font-semibold">Email:</div>
+        <div className="text-lg font-bold">{user.email}</div>
+      </div>
+      <div className="text-gray-500">You can extend this to edit fields (username, avatar, etc.)</div>
     </div>
-  );
+  )
 }
-
-export default Dashboard;
