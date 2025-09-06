@@ -9,16 +9,10 @@ export const signup = async (req, res) => {
   try {
     const { displayName, email, password } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
+    if (existingUser) return res.status(400).json({ message: "Email already exists" });
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
     const newUser = await User.create({ displayName, email, password: hashedPassword });
 
     res.status(201).json({ message: "User created successfully", userId: newUser._id });
@@ -32,29 +26,44 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid email or password" });
 
-    // Validate password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(400).json({ message: "Invalid email or password" });
 
     // Create JWT token
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     // Store token in HTTP-only cookie
     res.cookie("token", token, {
-      httpOnly: true, // cannot be accessed by JS
+      httpOnly: true,                  // cannot be accessed by JS
       secure: process.env.NODE_ENV === "production", // HTTPS only in production
       sameSite: "strict",
-      maxAge: 60 * 60 * 1000, // 1 hour
+      maxAge: 60 * 60 * 1000,          // 1 hour
     });
 
     // Send user data (without token)
-    res.json({ userId: user._id, displayName: user.displayName, email: user.email });
+    res.json({
+      userId: user._id,
+      displayName: user.displayName,
+      email: user.email,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+// Logout
+export const logout = (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+  res.json({ message: "Logged out successfully" });
+};
