@@ -1,5 +1,6 @@
 import Product from "../models/Product.js";
 
+// Add Product
 export const addProduct = async (req, res) => {
   try {
     const productData = { ...req.body, user: req.user.id };
@@ -10,15 +11,24 @@ export const addProduct = async (req, res) => {
   }
 };
 
+// List Products (with optional search by title)
 export const listProducts = async (req, res) => {
   try {
-    const products = await Product.find().populate("user", "displayName email");
+    const { q } = req.query; // search query
+    let filter = {};
+
+    if (q) {
+      filter.title = { $regex: q, $options: "i" }; // case-insensitive search
+    }
+
+    const products = await Product.find(filter).populate("user", "displayName email");
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+// Get Product by ID
 export const getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id).populate("user", "displayName email");
@@ -29,6 +39,7 @@ export const getProduct = async (req, res) => {
   }
 };
 
+// Update Product
 export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findOneAndUpdate(
@@ -43,6 +54,7 @@ export const updateProduct = async (req, res) => {
   }
 };
 
+// Delete Product
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({ _id: req.params.id, user: req.user.id });
